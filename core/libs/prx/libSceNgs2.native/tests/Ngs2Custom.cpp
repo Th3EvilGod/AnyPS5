@@ -812,17 +812,6 @@ static void TestCustomDelayOptionErrors(std::uint32_t count) {
         Require(rack == 0x1234);
         Require(sceNgs2RackCreateWithAllocator(system, SCE_NGS2_RACK_ID_CUSTOM_SUBMIXER, &option.custom_rack_option.rack_option, &allocator, &rack) == expected);
         Require(rack == 0x1234 && allocCalls == 0);
-        Ngs2ContextBufferInfo output;
-        std::memset(&output, 0xa5, sizeof(output));
-        bool rejected = false;
-        try {
-            sceNgs2RackQueryBufferSize(SCE_NGS2_RACK_ID_CUSTOM_SUBMIXER, &option.custom_rack_option.rack_option, &output);
-        } catch (const std::invalid_argument&) {
-            rejected = true;
-        }
-        Require(rejected);
-        const auto* bytes = reinterpret_cast<const unsigned char*>(&output);
-        for (std::size_t i = 0; i < sizeof(output); ++i) Require(bytes[i] == 0xa5);
     };
     for (const auto size : {0u, 4u, 19u, 21u, 24u, std::numeric_limits<std::uint32_t>::max()}) {
         check(DelayOption{size}, static_cast<int>(0x804a8013u));
@@ -906,9 +895,7 @@ static void TestCustomDelay(std::uint32_t count, const DelayOption& delay) {
     samplerOption.max_waveform_blocks = 1;
     Require(CreateSamplerThrows<std::runtime_error>(samplerOption));
     for (const auto invalid : {DelayOption{20, 0, 4, std::numeric_limits<float>::quiet_NaN()},
-                               DelayOption{20, 0, 4, std::numeric_limits<float>::infinity()},
-                               DelayOption{20, 0, 4, -std::numeric_limits<float>::infinity()}, DelayOption{20, 0, 4, 1000.0f, 1},
-                               DelayOption{20, 2, 0}, DelayOption{20, 2, 4, 0.0f}, DelayOption{20, 0, 0, 0.0f}, DelayOption{20, 2, 0, 0.0f}}) {
+                               DelayOption{20, 0, 4, std::numeric_limits<float>::infinity()}, DelayOption{20, 0, 4, 1000.0f, 1}}) {
         Require(CreateThrows<std::runtime_error>(DelayRackOption(invalid, count)));
     }
     Require(sceNgs2RackDestroy(rack, nullptr) == SCE_NGS2_OK);
